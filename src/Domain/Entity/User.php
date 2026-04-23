@@ -9,7 +9,8 @@ final class User
     public function __construct(
         private readonly ?int $id,
         private readonly string $username,
-        private readonly string $passwordHash
+        private readonly string $passwordHash,
+        private readonly ?string $createdAt = null
     ) {
     }
 
@@ -26,5 +27,10 @@ final class User
     public function passwordHash(): string
     {
         return $this->passwordHash;
+    }
+
+    public function createdAt(): ?string
+    {
+        return $this->createdAt;
     }
 }
