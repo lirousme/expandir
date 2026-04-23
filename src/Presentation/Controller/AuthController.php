@@ -40,7 +40,11 @@ final class AuthController
 
                 return [
                     'status' => 201,
-                    'body' => ['message' => 'Conta criada com sucesso.', 'user' => $user->username()],
+                    'body' => [
+                        'message' => 'Conta criada com sucesso.',
+                        'user' => $user->username(),
+                        'created_at' => $user->createdAt(),
+                    ],
                 ];
             }
 

@@ -140,6 +140,9 @@ $loggedUser = $_SESSION['auth_user'] ?? null;
                 });
 
                 const data = await response.json();
+                if (data?.created_at) {
+                    console.log('[timezone-debug] created_at (America/Sao_Paulo):', data.created_at);
+                }
                 ui.feedback.textContent = data.message || 'Resposta inesperada.';
 
                 if (response.ok) {
