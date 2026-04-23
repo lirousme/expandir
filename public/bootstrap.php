@@ -22,6 +22,9 @@ spl_autoload_register(function (string $class): void {
 
 Env::load(dirname(__DIR__) . '/.env');
 
+$appTimezone = Env::get('APP_TIMEZONE', 'America/Sao_Paulo');
+date_default_timezone_set($appTimezone);
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
