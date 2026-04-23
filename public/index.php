@@ -65,7 +65,7 @@ $loggedUser = $_SESSION['auth_user'] ?? null;
                     subtitle: 'Use usuário e senha para fazer login.',
                     button: 'Entrar',
                     toggle: 'Não tem conta? Criar agora',
-                    accent: 'amber'
+                    accent: 'orangered'
                 },
                 register: {
                     title: 'Criar conta',
@@ -101,16 +101,18 @@ $loggedUser = $_SESSION['auth_user'] ?? null;
             ui.button.textContent = cfg.button;
             ui.toggle.textContent = cfg.toggle;
 
-            const isLogin = cfg.accent === 'amber';
+            const isLogin = mode === 'login';
 
-            ui.button.className = `w-full rounded-xl border text-slate-100 font-semibold py-3 transition ${isLogin ? 'border-amber-300/40 bg-amber-300/15 hover:bg-amber-300/25' : 'border-emerald-300/35 bg-emerald-300/15 hover:bg-emerald-300/25'}`;
-            ui.title.className = `text-2xl font-semibold relative z-10 ${isLogin ? 'text-amber-100' : 'text-emerald-100'}`;
-            ui.toggle.className = `mt-4 text-sm transition relative z-10 ${isLogin ? 'text-amber-200/80 hover:text-amber-100' : 'text-emerald-200/80 hover:text-emerald-100'}`;
+            ui.button.className = `w-full rounded-xl border text-slate-100 font-semibold py-3 transition ${isLogin ? 'border-orange-300/45 bg-gradient-to-r from-orange-400/25 to-red-400/20 hover:from-orange-400/35 hover:to-red-400/30' : 'border-emerald-300/35 bg-emerald-300/15 hover:bg-emerald-300/25'}`;
+            ui.title.className = `text-2xl font-semibold relative z-10 ${isLogin ? 'text-orange-100' : 'text-emerald-100'}`;
+            ui.toggle.className = `mt-4 text-sm transition relative z-10 ${isLogin ? 'text-orange-200/80 hover:text-orange-100' : 'text-emerald-200/80 hover:text-emerald-100'}`;
 
-            ui.card.className = `relative rounded-[2rem] border p-8 backdrop-blur-2xl transition-all duration-500 overflow-hidden ${isLogin ? 'border-amber-200/25 bg-amber-950/35 shadow-[0_30px_80px_rgba(120,53,15,0.5),inset_0_1px_0_rgba(253,230,138,0.2)]' : 'border-emerald-200/25 bg-emerald-950/35 shadow-[0_30px_80px_rgba(6,78,59,0.55),inset_0_1px_0_rgba(110,231,183,0.18)]'}`;
-            ui.glassAura.className = `absolute -inset-6 rounded-[2.5rem] blur-2xl transition-colors duration-500 ${isLogin ? 'bg-amber-300/[0.10]' : 'bg-emerald-300/[0.10]'}`;
+            ui.card.className = `relative rounded-[2rem] border p-8 backdrop-blur-2xl transition-all duration-500 overflow-hidden ${isLogin ? 'border-orange-200/30 bg-gradient-to-br from-orange-950/45 via-red-950/35 to-orange-950/35 shadow-[0_30px_80px_rgba(194,65,12,0.45),inset_0_1px_0_rgba(254,215,170,0.2)]' : 'border-emerald-200/25 bg-emerald-950/35 shadow-[0_30px_80px_rgba(6,78,59,0.55),inset_0_1px_0_rgba(110,231,183,0.18)]'}`;
+            ui.glassAura.className = `absolute -inset-6 rounded-[2.5rem] blur-2xl transition-colors duration-500 ${isLogin ? 'bg-gradient-to-br from-orange-300/[0.12] to-red-300/[0.10]' : 'bg-emerald-300/[0.10]'}`;
             ui.feedback.textContent = '';
         }
+
+        applyMode('login');
 
         document.getElementById('toggleMode').addEventListener('click', () => {
             applyMode(state.mode === 'login' ? 'register' : 'login');
