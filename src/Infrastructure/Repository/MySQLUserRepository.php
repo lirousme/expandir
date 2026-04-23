@@ -50,6 +50,7 @@ final class MySQLUserRepository implements UserRepositoryInterface
         $statement->execute([
             'username' => $user->username(),
             'password_hash' => $user->passwordHash(),
+            'created_at' => $createdAt,
         ]);
 
         $userId = (int) $this->connection->lastInsertId();
