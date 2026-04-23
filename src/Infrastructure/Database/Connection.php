@@ -22,16 +22,11 @@ final class Connection
         $dsn = "mysql:host={$host};dbname={$dbName};charset=utf8mb4";
 
         try {
-            $connection = new PDO($dsn, $dbUser, $dbPass, [
+            return new PDO($dsn, $dbUser, $dbPass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone = '{$dbTimezoneOffset}'",
             ]);
-
-            $quotedTimezoneOffset = $connection->quote($dbTimezoneOffset);
-            $connection->exec("SET time_zone = {$quotedTimezoneOffset}");
-
-            return $connection;
         } catch (PDOException $exception) {
             throw new RuntimeException('Falha na conexão com MySQL. Verifique as credenciais do .env');
         }

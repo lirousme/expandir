@@ -38,17 +38,6 @@ final class MySQLUserRepository implements UserRepositoryInterface
     {
         $brasiliaNow = new DateTimeImmutable('now', new DateTimeZone('America/Sao_Paulo'));
         $createdAtBrasilia = $brasiliaNow->format('Y-m-d H:i:s');
-        $createdAtUtc = $brasiliaNow->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
-
-        $timezoneStatement = $this->connection->query('SELECT @@session.time_zone');
-        $sessionTimezone = $timezoneStatement !== false ? $timezoneStatement->fetchColumn() : null;
-
-        error_log(sprintf(
-            '[timezone-debug] MySQL session time_zone=%s | app_now_brasilia=%s | app_now_utc=%s',
-            is_string($sessionTimezone) ? $sessionTimezone : 'indisponivel',
-            $createdAtBrasilia,
-            $createdAtUtc
-        ));
 
         $statement = $this->connection->prepare('INSERT INTO users (username, password_hash, created_at) VALUES (:username, :password_hash, :created_at)');
         $statement->execute([
@@ -57,19 +46,6 @@ final class MySQLUserRepository implements UserRepositoryInterface
             'created_at' => $createdAtBrasilia,
         ]);
 
-        $userId = (int) $this->connection->lastInsertId();
-        $createdAt = null;
-
-        $timestampStatement = $this->connection->prepare('SELECT created_at FROM users WHERE id = :id LIMIT 1');
-        $timestampStatement->execute(['id' => $userId]);
-        $timestamp = $timestampStatement->fetchColumn();
-
-        if (is_string($timestamp)) {
-            $createdAt = $timestamp;
-        }
-
-        error_log(sprintf('[timezone-debug] created_at persisted (America/Sao_Paulo): %s', $createdAt ?? 'null'));
-
-        return new User($userId, $user->username(), $user->passwordHash(), $createdAt);
+        return new User((int) $this->connection->lastInsertId(), $user->username(), $user->passwordHash(), $createdAtBrasilia);
     }
 }

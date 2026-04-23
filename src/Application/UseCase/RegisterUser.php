@@ -6,6 +6,7 @@ namespace App\Application\UseCase;
 
 use App\Domain\Entity\User;
 use App\Domain\Repository\UserRepositoryInterface;
+use App\Support\Env;
 use DomainException;
 
 final class RegisterUser
@@ -20,10 +21,8 @@ final class RegisterUser
             throw new DomainException('Nome de usuário já está em uso.');
         }
 
-        $hash = password_hash($password, PASSWORD_ARGON2ID, [
-            'memory_cost' => 1 << 17,
-            'time_cost' => 6,
-            'threads' => 4,
+        $hash = password_hash($password, PASSWORD_BCRYPT, [
+            'cost' => (int) Env::get('PASSWORD_BCRYPT_COST', '10'),
         ]);
 
         if ($hash === false) {
