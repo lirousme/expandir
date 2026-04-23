@@ -25,7 +25,15 @@ php -S 127.0.0.1:8000 -t public
 ### Timezone padrão (Brasília)
 - O sistema PHP usa `APP_TIMEZONE` (padrão: `America/Sao_Paulo`).
 - Cada conexão MySQL aplica `SET time_zone` com `DB_TIMEZONE_OFFSET` (padrão: `-03:00`).
-- Assim, datas geradas pela aplicação e timestamps do banco respeitam horário de Brasília por padrão.
+- A coluna `users.created_at` é `DATETIME` (sem conversão automática de fuso do MySQL), e o valor é salvo pela aplicação já no fuso de Brasília.
+- Assim, datas geradas pela aplicação e persistidas no banco respeitam horário de Brasília por padrão.
+
+#### Migração para quem já criou a tabela
+Se a tabela `users` já existe com `created_at` como `TIMESTAMP`, rode:
+
+```sql
+ALTER TABLE users MODIFY created_at DATETIME NOT NULL;
+```
 
 ## Requisitos atendidos
 - Formulário único para login e criação de conta.
