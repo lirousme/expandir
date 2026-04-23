@@ -17,14 +17,20 @@ final class Connection
         $dbName = Env::get('DB_NAME', 'login_app');
         $dbUser = Env::get('DB_USER', 'root');
         $dbPass = Env::get('DB_PASS', '');
+        $dbTimezoneOffset = Env::get('DB_TIMEZONE_OFFSET', '-03:00');
 
         $dsn = "mysql:host={$host};dbname={$dbName};charset=utf8mb4";
 
         try {
-            return new PDO($dsn, $dbUser, $dbPass, [
+            $connection = new PDO($dsn, $dbUser, $dbPass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             ]);
+
+            $quotedTimezoneOffset = $connection->quote($dbTimezoneOffset);
+            $connection->exec("SET time_zone = {$quotedTimezoneOffset}");
+
+            return $connection;
         } catch (PDOException $exception) {
             throw new RuntimeException('Falha na conexão com MySQL. Verifique as credenciais do .env');
         }
