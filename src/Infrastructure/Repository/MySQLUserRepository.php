@@ -6,7 +6,6 @@ namespace App\Infrastructure\Repository;
 
 use App\Domain\Entity\User;
 use App\Domain\Repository\UserRepositoryInterface;
-use App\Support\Env;
 use DateTimeImmutable;
 use DateTimeZone;
 use PDO;
@@ -32,8 +31,15 @@ final class MySQLUserRepository implements UserRepositoryInterface
 
     public function create(User $user): User
     {
-        $timezone = Env::get('APP_TIMEZONE', 'America/Sao_Paulo') ?? 'America/Sao_Paulo';
-        $createdAt = (new DateTimeImmutable('now', new DateTimeZone($timezone)))->format('Y-m-d H:i:s');
+        $utcNow = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+        $createdAtBrasilia = $utcNow->setTimezone(new DateTimeZone('America/Sao_Paulo'));
+        $createdAt = $createdAtBrasilia->format('Y-m-d H:i:s');
+
+        error_log(sprintf(
+            '[timezone-debug] UTC=%s | America/Sao_Paulo=%s',
+            $utcNow->format('Y-m-d H:i:s'),
+            $createdAt
+        ));
 
         $statement = $this->connection->prepare('INSERT INTO users (username, password_hash, created_at) VALUES (:username, :password_hash, :created_at)');
         $statement->execute([
