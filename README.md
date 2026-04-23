@@ -40,7 +40,7 @@ ALTER TABLE users MODIFY created_at DATETIME NOT NULL;
   - Azul: login
   - Verde: criar conta
 - Apenas dois campos: usuário e senha.
-- Senha criptografada com `Argon2id` com parâmetros fortes.
+- Senha criptografada com `bcrypt` (custo padrão `10`, ajustável via `PASSWORD_BCRYPT_COST` no `.env`).
 
 
 ## Deploy em subpasta (`public_html/login`)
