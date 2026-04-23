@@ -30,11 +30,12 @@ final class MySQLUserRepository implements UserRepositoryInterface
     public function create(User $user): User
     {
         $statement = $this->connection->prepare(
-            'INSERT INTO users (username, password_hash, created_at) VALUES (:username, :password_hash, NOW())'
+            'INSERT INTO users (username, password_hash, created_at) VALUES (:username, :password_hash, :created_at)'
         );
         $statement->execute([
             'username' => $user->username(),
             'password_hash' => $user->passwordHash(),
+            'created_at' => date('Y-m-d H:i:s')
         ]);
 
         return new User((int) $this->connection->lastInsertId(), $user->username(), $user->passwordHash());
