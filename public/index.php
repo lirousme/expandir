@@ -4,9 +4,15 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/bootstrap.php';
 
+$scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
+$basePath = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+$basePath = $basePath === '.' ? '' : $basePath;
+$homeUrl = $basePath === '' ? '/' : $basePath . '/';
+$authUrl = $basePath . '/auth.php';
+
 if (isset($_GET['logout'])) {
     session_destroy();
-    header('Location: /');
+    header('Location: ' . $homeUrl);
     exit;
 }
 
@@ -25,7 +31,7 @@ $loggedUser = $_SESSION['auth_user'] ?? null;
     <main class="w-full max-w-md rounded-3xl border border-white/15 bg-slate-900/70 p-8 text-center backdrop-blur-2xl shadow-[0_20px_60px_rgba(2,6,23,0.55)]">
         <h1 class="text-2xl font-semibold">Bem-vindo, <?= htmlspecialchars((string) $loggedUser, ENT_QUOTES, 'UTF-8') ?>!</h1>
         <p class="mt-3 text-slate-300">Você está autenticado no sistema.</p>
-        <a href="/?logout=1" class="inline-flex mt-6 rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 text-slate-100 font-semibold px-5 py-2 transition">Sair</a>
+        <a href="<?= htmlspecialchars($homeUrl, ENT_QUOTES, 'UTF-8') ?>?logout=1" class="inline-flex mt-6 rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 text-slate-100 font-semibold px-5 py-2 transition">Sair</a>
     </main>
 <?php else: ?>
     <main class="relative w-full max-w-md">
@@ -123,7 +129,7 @@ $loggedUser = $_SESSION['auth_user'] ?? null;
             ui.feedback.textContent = 'Processando...';
 
             try {
-                const response = await fetch('/auth.php', {
+                const response = await fetch(<?= json_encode($authUrl, JSON_UNESCAPED_SLASHES) ?>, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
