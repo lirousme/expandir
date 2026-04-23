@@ -141,7 +141,8 @@ $loggedUser = $_SESSION['auth_user'] ?? null;
 
                 const data = await response.json();
                 if (data?.created_at) {
-                    console.log('[timezone-debug] created_at (America/Sao_Paulo):', data.created_at);
+                    console.log('[timezone-debug] horário salvo no banco (America/Sao_Paulo):', data.created_at);
+                    console.log('[timezone-debug] horário atual no navegador:', new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }));
                 }
                 ui.feedback.textContent = data.message || 'Resposta inesperada.';
 
