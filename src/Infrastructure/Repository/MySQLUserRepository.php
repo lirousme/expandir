@@ -6,8 +6,6 @@ namespace App\Infrastructure\Repository;
 
 use App\Domain\Entity\User;
 use App\Domain\Repository\UserRepositoryInterface;
-use DateTimeImmutable;
-use DateTimeZone;
 use PDO;
 
 final class MySQLUserRepository implements UserRepositoryInterface
@@ -36,21 +34,18 @@ final class MySQLUserRepository implements UserRepositoryInterface
 
     public function create(User $user): User
     {
-        $utcNow = new DateTimeImmutable('now', new DateTimeZone('UTC'));
-        $createdAtBrasilia = $utcNow->setTimezone(new DateTimeZone('America/Sao_Paulo'));
-        $createdAt = $createdAtBrasilia->format('Y-m-d H:i:s');
+        $timezoneStatement = $this->connection->query('SELECT @@session.time_zone');
+        $sessionTimezone = $timezoneStatement !== false ? $timezoneStatement->fetchColumn() : null;
 
         error_log(sprintf(
-            '[timezone-debug] UTC=%s | America/Sao_Paulo=%s',
-            $utcNow->format('Y-m-d H:i:s'),
-            $createdAt
+            '[timezone-debug] MySQL session time_zone=%s',
+            is_string($sessionTimezone) ? $sessionTimezone : 'indisponivel'
         ));
 
-        $statement = $this->connection->prepare('INSERT INTO users (username, password_hash, created_at) VALUES (:username, :password_hash, :created_at)');
+        $statement = $this->connection->prepare('INSERT INTO users (username, password_hash, created_at) VALUES (:username, :password_hash, NOW())');
         $statement->execute([
             'username' => $user->username(),
             'password_hash' => $user->passwordHash(),
-            'created_at' => $createdAt,
         ]);
 
         $userId = (int) $this->connection->lastInsertId();
