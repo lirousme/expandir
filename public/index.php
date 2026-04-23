@@ -65,14 +65,14 @@ $loggedUser = $_SESSION['auth_user'] ?? null;
                     subtitle: 'Use usuário e senha para fazer login.',
                     button: 'Entrar',
                     toggle: 'Não tem conta? Criar agora',
-                    accent: 'slate'
+                    accent: 'amber'
                 },
                 register: {
                     title: 'Criar conta',
                     subtitle: 'Escolha usuário e senha para se cadastrar.',
                     button: 'Criar conta',
                     toggle: 'Já tem conta? Fazer login',
-                    accent: 'stone'
+                    accent: 'emerald'
                 }
             }
         };
@@ -101,12 +101,14 @@ $loggedUser = $_SESSION['auth_user'] ?? null;
             ui.button.textContent = cfg.button;
             ui.toggle.textContent = cfg.toggle;
 
-            ui.button.className = `w-full rounded-xl border border-white/20 text-slate-100 font-semibold py-3 transition ${cfg.accent === 'slate' ? 'bg-white/10 hover:bg-white/15' : 'bg-white/[0.08] hover:bg-white/[0.13]'}`;
-            ui.title.className = `text-2xl font-semibold relative z-10 ${cfg.accent === 'slate' ? 'text-slate-100' : 'text-zinc-100'}`;
-            ui.toggle.className = `mt-4 text-sm transition relative z-10 ${cfg.accent === 'slate' ? 'text-slate-300 hover:text-white' : 'text-zinc-300 hover:text-zinc-100'}`;
+            const isLogin = cfg.accent === 'amber';
 
-            ui.card.className = `relative rounded-[2rem] border p-8 backdrop-blur-2xl transition-all duration-500 overflow-hidden ${cfg.accent === 'slate' ? 'border-white/15 bg-slate-900/55 shadow-[0_30px_80px_rgba(2,6,23,0.65),inset_0_1px_0_rgba(255,255,255,0.12)]' : 'border-white/10 bg-zinc-900/55 shadow-[0_30px_80px_rgba(9,9,11,0.7),inset_0_1px_0_rgba(255,255,255,0.1)]'}`;
-            ui.glassAura.className = `absolute -inset-6 rounded-[2.5rem] blur-2xl transition-colors duration-500 ${cfg.accent === 'slate' ? 'bg-white/[0.03]' : 'bg-white/[0.02]'}`;
+            ui.button.className = `w-full rounded-xl border text-slate-100 font-semibold py-3 transition ${isLogin ? 'border-amber-300/40 bg-amber-300/15 hover:bg-amber-300/25' : 'border-emerald-300/35 bg-emerald-300/15 hover:bg-emerald-300/25'}`;
+            ui.title.className = `text-2xl font-semibold relative z-10 ${isLogin ? 'text-amber-100' : 'text-emerald-100'}`;
+            ui.toggle.className = `mt-4 text-sm transition relative z-10 ${isLogin ? 'text-amber-200/80 hover:text-amber-100' : 'text-emerald-200/80 hover:text-emerald-100'}`;
+
+            ui.card.className = `relative rounded-[2rem] border p-8 backdrop-blur-2xl transition-all duration-500 overflow-hidden ${isLogin ? 'border-amber-200/25 bg-amber-950/35 shadow-[0_30px_80px_rgba(120,53,15,0.5),inset_0_1px_0_rgba(253,230,138,0.2)]' : 'border-emerald-200/25 bg-emerald-950/35 shadow-[0_30px_80px_rgba(6,78,59,0.55),inset_0_1px_0_rgba(110,231,183,0.18)]'}`;
+            ui.glassAura.className = `absolute -inset-6 rounded-[2.5rem] blur-2xl transition-colors duration-500 ${isLogin ? 'bg-amber-300/[0.10]' : 'bg-emerald-300/[0.10]'}`;
             ui.feedback.textContent = '';
         }
 
