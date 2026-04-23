@@ -24,8 +24,9 @@ php -S 127.0.0.1:8000 -t public
 
 ### Timezone padrão (Brasília)
 - O sistema PHP usa `APP_TIMEZONE` (padrão: `America/Sao_Paulo`).
-- Cada conexão MySQL aplica `SET time_zone` com `DB_TIMEZONE_OFFSET` (padrão: `-03:00`).
-- A coluna `users.created_at` usa `DATETIME` e é preenchida pela aplicação no fuso de Brasília.
+- Cada conexão MySQL aplica `SET time_zone` com offset calculado a partir de `APP_TIMEZONE` (fallback para `America/Sao_Paulo`).
+- Você ainda pode forçar um offset específico com `DB_TIMEZONE_OFFSET` no `.env` (ex.: `-03:00`).
+- A coluna `users.created_at` usa `DATETIME` e é preenchida com `NOW()` no MySQL já configurado para o fuso de Brasília.
 - Isso evita conversão automática de fuso do MySQL (`TIMESTAMP`) e mantém o valor gravado exatamente no horário local esperado.
 
 Se sua tabela já existe com `TIMESTAMP`, aplique:
