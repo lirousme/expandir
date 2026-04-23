@@ -33,6 +33,7 @@ final class Connection
             $connection = new PDO($dsn, $dbUser, $dbPass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone = '{$dbTimezoneOffset}'",
             ]);
 
             $quotedTimezoneOffset = $connection->quote($dbTimezoneOffset);
