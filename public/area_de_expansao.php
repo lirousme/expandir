@@ -81,6 +81,7 @@ if (!is_array($elementoAtual)) {
 $createError = '';
 $createSuccess = '';
 $slideInformacoes = [];
+$motivosTrilha = [];
 
 if (isset($_SESSION['area_de_expansao_flash']) && is_array($_SESSION['area_de_expansao_flash'])) {
     $createError = (string) ($_SESSION['area_de_expansao_flash']['error'] ?? '');
@@ -132,28 +133,63 @@ $buscarProximoElementoReferencia = static function (PDO $connection, int $idInfo
 $primeiraInformacao = $buscarPrimeiraInformacaoPorElemento($connection, $userId, $idElementoAtual);
 if ($primeiraInformacao !== null) {
     $slideInformacoes[] = $primeiraInformacao;
+} else {
+    $motivosTrilha[0] = sprintf(
+        'Nenhuma informação de nível 1 foi encontrada para o elemento atual (id %d) com vínculo main = 1 em elementos_informacoes.',
+        $idElementoAtual
+    );
+}
 
+if ($primeiraInformacao !== null) {
     $segundoElementoReferencia = $buscarProximoElementoReferencia($connection, (int) $primeiraInformacao['id']);
     if ($segundoElementoReferencia > 0) {
         $segundaInformacao = $buscarPrimeiraInformacaoPorElemento($connection, $userId, $segundoElementoReferencia);
         if ($segundaInformacao !== null) {
             $slideInformacoes[] = $segundaInformacao;
-
-            $terceiroElementoReferencia = $buscarProximoElementoReferencia($connection, (int) $segundaInformacao['id']);
-            if ($terceiroElementoReferencia > 0) {
-                $terceiraInformacao = $buscarPrimeiraInformacaoPorElemento($connection, $userId, $terceiroElementoReferencia);
-                if ($terceiraInformacao !== null) {
-                    $slideInformacoes[] = $terceiraInformacao;
-                }
-            }
+        } else {
+            $motivosTrilha[1] = sprintf(
+                'Foi encontrado o elemento de referência %d via informação %d (main = 2), mas ele não possui informação de nível 1 com vínculo main = 1 para este usuário.',
+                $segundoElementoReferencia,
+                (int) $primeiraInformacao['id']
+            );
         }
+    } else {
+        $motivosTrilha[1] = sprintf(
+            'A informação %d (etapa 1) não possui relacionamento em elementos_informacoes com main = 2; por isso não foi possível descobrir o próximo elemento de referência.',
+            (int) $primeiraInformacao['id']
+        );
     }
 }
 
+if (isset($segundaInformacao) && is_array($segundaInformacao)) {
+    $terceiroElementoReferencia = $buscarProximoElementoReferencia($connection, (int) $segundaInformacao['id']);
+    if ($terceiroElementoReferencia > 0) {
+        $terceiraInformacao = $buscarPrimeiraInformacaoPorElemento($connection, $userId, $terceiroElementoReferencia);
+        if ($terceiraInformacao !== null) {
+            $slideInformacoes[] = $terceiraInformacao;
+        } else {
+            $motivosTrilha[2] = sprintf(
+                'Foi encontrado o elemento de referência %d via informação %d (main = 2), mas ele não possui informação de nível 1 com vínculo main = 1 para este usuário.',
+                $terceiroElementoReferencia,
+                (int) $segundaInformacao['id']
+            );
+        }
+    } else {
+        $motivosTrilha[2] = sprintf(
+            'A informação %d (etapa 2) não possui relacionamento em elementos_informacoes com main = 2; por isso não foi possível descobrir o próximo elemento de referência.',
+            (int) $segundaInformacao['id']
+        );
+    }
+} elseif (!array_key_exists(1, $motivosTrilha)) {
+    $motivosTrilha[2] = 'A etapa 3 não pôde ser avaliada porque a etapa 2 não retornou uma informação válida.';
+}
+
 while (count($slideInformacoes) < 3) {
+    $indiceSlide = count($slideInformacoes);
+    $motivo = $motivosTrilha[$indiceSlide] ?? 'Não foi possível localizar os vínculos esperados para esta etapa da trilha.';
     $slideInformacoes[] = [
         'id' => 0,
-        'texto_ptbr' => 'Informação não encontrada para esta etapa da trilha.',
+        'texto_ptbr' => 'Informação não encontrada para esta etapa da trilha.' . "\n\n" . 'Motivo: ' . $motivo,
         'nivel' => 1,
     ];
 }
