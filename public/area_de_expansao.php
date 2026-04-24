@@ -100,6 +100,26 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (string) ($_POST['action
             $tags = [];
         }
 
+        $mainIndex = null;
+        foreach ($tags as $index => $tag) {
+            if (!is_array($tag)) {
+                continue;
+            }
+            if ((int) ($tag['main'] ?? 2) === 1) {
+                $mainIndex = $index;
+                break;
+            }
+        }
+        if ($mainIndex === null) {
+            foreach ($tags as $index => $tag) {
+                if (is_array($tag)) {
+                    $tags[$index]['main'] = 1;
+                    $mainIndex = $index;
+                    break;
+                }
+            }
+        }
+
         try {
             $connection->beginTransaction();
 
@@ -126,27 +146,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (string) ($_POST['action
                 $tagNome = trim((string) ($tag['nome'] ?? ''));
                 $tagNovo = (bool) ($tag['novo'] ?? false);
 
-                $tagMain = strtolower($tagNome) === 'main' ? 1 : 2;
+                $tagMain = (int) ($tag['main'] ?? 2) === 1 ? 1 : 2;
 
                 if ($tagNovo && $tagNome !== '') {
-                    if ($tagMain === 1) {
-                        $buscarMainStatement = $connection->prepare(
-                            'SELECT id FROM elementos
-                             WHERE id_usuario = :id_usuario AND LOWER(nome_do_elemento) = :nome
-                             LIMIT 1'
-                        );
-                        $buscarMainStatement->execute([
-                            'id_usuario' => $userId,
-                            'nome' => 'main',
-                        ]);
-                        $mainExistenteId = (int) ($buscarMainStatement->fetchColumn() ?: 0);
-                        if ($mainExistenteId > 0) {
-                            $mainAtual = $elementosRelacionados[$mainExistenteId] ?? 2;
-                            $elementosRelacionados[$mainExistenteId] = min($mainAtual, $tagMain);
-                            continue;
-                        }
-                    }
-
                     $insertNovoElemento = $connection->prepare(
                         'INSERT INTO elementos (nome_do_elemento, id_usuario, pessoal)
                          VALUES (:nome_do_elemento, :id_usuario, 2)'

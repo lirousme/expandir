@@ -137,11 +137,10 @@ declare(strict_types=1);
     const selectedTagsContainer = document.getElementById('selected-tags');
     const tagsPayloadInput = document.getElementById('tags-payload');
 
-    const MAIN_TAG_NAME = 'main';
     const selectedTags = [
-        { id: idElementoAtual, nome: <?= json_encode((string) $elementoAtual['nome_do_elemento'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, novo: false },
-        { id: 0, nome: MAIN_TAG_NAME, novo: true }
+        { id: idElementoAtual, nome: <?= json_encode((string) $elementoAtual['nome_do_elemento'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, novo: false }
     ];
+    let mainTagKey = selectedTags.length > 0 ? `id:${selectedTags[0].id}` : null;
     let suggestionTimeout = null;
 
     const openModal = (element) => {
@@ -154,17 +153,28 @@ declare(strict_types=1);
         element.classList.remove('flex');
     };
 
-    const syncTagsPayload = () => {
-        tagsPayloadInput.value = JSON.stringify(selectedTags);
-    };
-
-    const isMainTag = (tagName) => tagName.trim().toLowerCase() === MAIN_TAG_NAME;
+    const buildTagKey = (tag) => (Number(tag.id || 0) > 0 ? `id:${Number(tag.id)}` : `name:${String(tag.nome || '').trim().toLowerCase()}`);
 
     const ensureMainTagSelected = () => {
-        const hasMainTag = selectedTags.some((tag) => isMainTag(tag.nome || ''));
-        if (!hasMainTag) {
-            selectedTags.push({ id: 0, nome: MAIN_TAG_NAME, novo: true });
+        if (selectedTags.length === 0) {
+            mainTagKey = null;
+            return;
         }
+
+        const hasCurrentMain = selectedTags.some((tag) => buildTagKey(tag) === mainTagKey);
+        if (!hasCurrentMain) {
+            mainTagKey = buildTagKey(selectedTags[0]);
+        }
+    };
+
+    const syncTagsPayload = () => {
+        ensureMainTagSelected();
+        tagsPayloadInput.value = JSON.stringify(
+            selectedTags.map((tag) => ({
+                ...tag,
+                main: buildTagKey(tag) === mainTagKey ? 1 : 2,
+            }))
+        );
     };
 
     const renderSelectedTags = () => {
@@ -178,21 +188,35 @@ declare(strict_types=1);
         }
 
         selectedTags.forEach((tag, index) => {
-            const item = document.createElement('button');
-            item.type = 'button';
-            const tagIsMain = isMainTag(tag.nome || '');
-            item.className = tagIsMain
-                ? 'inline-flex items-center gap-2 rounded-full border border-[orangered]/60 bg-[orangered]/20 px-3 py-1 text-xs text-[orangered]'
-                : 'inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200';
-            item.innerHTML = `<span>${tag.nome}</span><span class="text-slate-300">✕</span>`;
-            item.addEventListener('click', () => {
-                if (tagIsMain) {
-                    return;
-                }
+            const tagIsMain = buildTagKey(tag) === mainTagKey;
+            const wrapper = document.createElement('div');
+            wrapper.className = tagIsMain
+                ? 'inline-flex items-center gap-1 rounded-full border border-[orangered]/60 bg-[orangered]/20 px-2 py-1 text-xs text-[orangered]'
+                : 'inline-flex items-center gap-1 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-2 py-1 text-xs text-emerald-200';
+
+            const tagButton = document.createElement('button');
+            tagButton.type = 'button';
+            tagButton.className = 'rounded-full px-1 py-0.5 hover:bg-white/10';
+            tagButton.textContent = tag.nome;
+            tagButton.title = 'Clique para definir como tag principal';
+            tagButton.addEventListener('click', () => {
+                mainTagKey = buildTagKey(tag);
+                renderSelectedTags();
+            });
+
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.className = 'rounded-full px-1 py-0.5 text-slate-200 hover:bg-white/10';
+            removeButton.textContent = '✕';
+            removeButton.title = 'Remover tag';
+            removeButton.addEventListener('click', () => {
                 selectedTags.splice(index, 1);
                 renderSelectedTags();
             });
-            selectedTagsContainer.appendChild(item);
+
+            wrapper.appendChild(tagButton);
+            wrapper.appendChild(removeButton);
+            selectedTagsContainer.appendChild(wrapper);
         });
 
         syncTagsPayload();
@@ -206,6 +230,9 @@ declare(strict_types=1);
             return;
         }
         selectedTags.push(tag);
+        if (selectedTags.length === 1) {
+            mainTagKey = buildTagKey(tag);
+        }
         renderSelectedTags();
     };
 
