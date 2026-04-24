@@ -8,6 +8,7 @@ declare(strict_types=1);
  * @var int $idElementoAtual
  * @var string $createError
  * @var string $createSuccess
+ * @var array<int,array{id:int,texto_ptbr:string,nivel:int}> $slideInformacoes
  */
 ?>
 <!DOCTYPE html>
@@ -35,6 +36,39 @@ declare(strict_types=1);
 </header>
 
 <main class="mx-auto max-w-6xl px-6 pb-8 pt-28">
+    <section class="mb-6 rounded-2xl border border-white/10 bg-slate-900/60 p-6 shadow-lg">
+        <h2 class="text-center text-xl font-semibold">Trilha investigativa</h2>
+        <p class="mt-2 text-center text-sm text-slate-400">3 informações descobertas em sequência.</p>
+
+        <div class="mt-4 flex items-center justify-center gap-3">
+            <button id="slide-prev" type="button" class="rounded-lg border border-white/20 px-3 py-2 text-sm hover:bg-white/10">←</button>
+            <div class="relative w-full max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-slate-950/40">
+                <?php foreach ($slideInformacoes as $index => $informacao): ?>
+                    <article
+                        class="investigation-slide <?= $index === 0 ? '' : 'hidden' ?> p-6"
+                        data-slide-index="<?= (int) $index ?>"
+                    >
+                        <p class="text-xs uppercase tracking-widest text-emerald-300">Informação <?= (int) ($index + 1) ?></p>
+                        <p class="mt-3 text-lg leading-relaxed text-slate-100">
+                            <?= nl2br(htmlspecialchars((string) $informacao['texto_ptbr'], ENT_QUOTES, 'UTF-8')) ?>
+                        </p>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+            <button id="slide-next" type="button" class="rounded-lg border border-white/20 px-3 py-2 text-sm hover:bg-white/10">→</button>
+        </div>
+        <div class="mt-3 flex justify-center gap-2">
+            <?php foreach ($slideInformacoes as $index => $informacao): ?>
+                <button
+                    type="button"
+                    class="slide-dot h-2.5 w-2.5 rounded-full <?= $index === 0 ? 'bg-emerald-300' : 'bg-white/30' ?>"
+                    data-slide-dot="<?= (int) $index ?>"
+                    aria-label="Ir para informação <?= (int) ($index + 1) ?>"
+                ></button>
+            <?php endforeach; ?>
+        </div>
+    </section>
+
     <section class="rounded-2xl border border-white/10 bg-slate-900/60 p-6 shadow-lg">
         <h2 class="text-xl font-semibold">Adicione uma informação</h2>
         <p class="mt-3 text-slate-300">Use o botão <strong>+</strong> no topo para criar uma nova informação e relacionar tags/elementos.</p>
@@ -142,6 +176,39 @@ declare(strict_types=1);
     ];
     let mainTagKey = selectedTags.length > 0 ? `id:${selectedTags[0].id}` : null;
     let suggestionTimeout = null;
+    const slides = Array.from(document.querySelectorAll('.investigation-slide'));
+    const slideDots = Array.from(document.querySelectorAll('.slide-dot'));
+    const prevSlideButton = document.getElementById('slide-prev');
+    const nextSlideButton = document.getElementById('slide-next');
+    let currentSlideIndex = 0;
+
+    const renderCurrentSlide = () => {
+        slides.forEach((slide, index) => {
+            slide.classList.toggle('hidden', index !== currentSlideIndex);
+        });
+        slideDots.forEach((dot, index) => {
+            dot.classList.toggle('bg-emerald-300', index === currentSlideIndex);
+            dot.classList.toggle('bg-white/30', index !== currentSlideIndex);
+        });
+    };
+
+    const goToSlide = (index) => {
+        if (slides.length === 0) {
+            return;
+        }
+        currentSlideIndex = (index + slides.length) % slides.length;
+        renderCurrentSlide();
+    };
+
+    if (prevSlideButton) {
+        prevSlideButton.addEventListener('click', () => goToSlide(currentSlideIndex - 1));
+    }
+    if (nextSlideButton) {
+        nextSlideButton.addEventListener('click', () => goToSlide(currentSlideIndex + 1));
+    }
+    slideDots.forEach((dot, index) => {
+        dot.addEventListener('click', () => goToSlide(index));
+    });
 
     const openModal = (element) => {
         element.classList.remove('hidden');

@@ -80,11 +80,82 @@ if (!is_array($elementoAtual)) {
 
 $createError = '';
 $createSuccess = '';
+$slideInformacoes = [];
 
 if (isset($_SESSION['area_de_expansao_flash']) && is_array($_SESSION['area_de_expansao_flash'])) {
     $createError = (string) ($_SESSION['area_de_expansao_flash']['error'] ?? '');
     $createSuccess = (string) ($_SESSION['area_de_expansao_flash']['success'] ?? '');
     unset($_SESSION['area_de_expansao_flash']);
+}
+
+/**
+ * Busca a primeira informação (nível 1) para um elemento de referência.
+ */
+$buscarPrimeiraInformacaoPorElemento = static function (PDO $connection, int $idUsuario, int $idElementoReferencia): ?array {
+    $statement = $connection->prepare(
+        'SELECT i.id, i.texto_ptbr, i.nivel
+         FROM informacoes i
+         INNER JOIN elementos_informacoes ei ON ei.id_informacao = i.id
+         WHERE i.id_usuario = :id_usuario
+           AND i.nivel = 1
+           AND ei.id_elemento = :id_elemento
+           AND ei.main = 1
+         ORDER BY i.id ASC
+         LIMIT 1'
+    );
+    $statement->execute([
+        'id_usuario' => $idUsuario,
+        'id_elemento' => $idElementoReferencia,
+    ]);
+    $resultado = $statement->fetch();
+
+    return is_array($resultado) ? $resultado : null;
+};
+
+/**
+ * Busca o próximo elemento de referência partindo de uma informação.
+ */
+$buscarProximoElementoReferencia = static function (PDO $connection, int $idInformacao): int {
+    $statement = $connection->prepare(
+        'SELECT id_elemento
+         FROM elementos_informacoes
+         WHERE id_informacao = :id_informacao
+           AND main = 2
+         ORDER BY id ASC
+         LIMIT 1'
+    );
+    $statement->execute(['id_informacao' => $idInformacao]);
+
+    return (int) ($statement->fetchColumn() ?: 0);
+};
+
+$primeiraInformacao = $buscarPrimeiraInformacaoPorElemento($connection, $userId, $idElementoAtual);
+if ($primeiraInformacao !== null) {
+    $slideInformacoes[] = $primeiraInformacao;
+
+    $segundoElementoReferencia = $buscarProximoElementoReferencia($connection, (int) $primeiraInformacao['id']);
+    if ($segundoElementoReferencia > 0) {
+        $segundaInformacao = $buscarPrimeiraInformacaoPorElemento($connection, $userId, $segundoElementoReferencia);
+        if ($segundaInformacao !== null) {
+            $slideInformacoes[] = $segundaInformacao;
+
+            $terceiroElementoReferencia = $buscarProximoElementoReferencia($connection, (int) $segundaInformacao['id']);
+            if ($terceiroElementoReferencia > 0) {
+                $terceiraInformacao = $buscarPrimeiraInformacaoPorElemento($connection, $userId, $terceiroElementoReferencia);
+                if ($terceiraInformacao !== null) {
+                    $slideInformacoes[] = $terceiraInformacao;
+                }
+            }
+        }
+    }
+}
+
+while (count($slideInformacoes) < 3) {
+    $slideInformacoes[] = [
+        'id' => 0,
+        'texto_ptbr' => 'Informação não encontrada para esta etapa da trilha.',
+        'nivel' => 1,
+    ];
 }
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (string) ($_POST['action'] ?? '') === 'criar_informacao') {
