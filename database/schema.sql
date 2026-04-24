@@ -9,6 +9,7 @@ CREATE TABLE elementos (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     nome_do_elemento VARCHAR(255) NOT NULL,
     id_usuario INT UNSIGNED,
+    pessoal INT,
 
     CONSTRAINT fk_elemento_usuario
         FOREIGN KEY (id_usuario)
@@ -91,3 +92,23 @@ CREATE TABLE elementos_informacoes (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
+
+CREATE TABLE biblioteca (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT UNSIGNED,
+    id_elemento INT UNSIGNED,
+    ordem INT,
+
+    CONSTRAINT fk_biblioteca_usuario
+        FOREIGN KEY (id_usuario)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_biblioteca_elemento
+        FOREIGN KEY (id_elemento)
+        REFERENCES elementos(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+) ENGINE=InnoDB;
+
