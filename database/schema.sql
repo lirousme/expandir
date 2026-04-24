@@ -42,6 +42,7 @@ CREATE TABLE combinacoes (
     id_info_tres INT UNSIGNED,
     id_usuario INT UNSIGNED,
     revisoes INT,
+    proxima_revisao DATETIME,
 
     CONSTRAINT fk_info_um
         FOREIGN KEY (id_info_um)
