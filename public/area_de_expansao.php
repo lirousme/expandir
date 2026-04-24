@@ -126,7 +126,27 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (string) ($_POST['action
                 $tagNome = trim((string) ($tag['nome'] ?? ''));
                 $tagNovo = (bool) ($tag['novo'] ?? false);
 
+                $tagMain = strtolower($tagNome) === 'main' ? 1 : 2;
+
                 if ($tagNovo && $tagNome !== '') {
+                    if ($tagMain === 1) {
+                        $buscarMainStatement = $connection->prepare(
+                            'SELECT id FROM elementos
+                             WHERE id_usuario = :id_usuario AND LOWER(nome_do_elemento) = :nome
+                             LIMIT 1'
+                        );
+                        $buscarMainStatement->execute([
+                            'id_usuario' => $userId,
+                            'nome' => 'main',
+                        ]);
+                        $mainExistenteId = (int) ($buscarMainStatement->fetchColumn() ?: 0);
+                        if ($mainExistenteId > 0) {
+                            $mainAtual = $elementosRelacionados[$mainExistenteId] ?? 2;
+                            $elementosRelacionados[$mainExistenteId] = min($mainAtual, $tagMain);
+                            continue;
+                        }
+                    }
+
                     $insertNovoElemento = $connection->prepare(
                         'INSERT INTO elementos (nome_do_elemento, id_usuario, pessoal)
                          VALUES (:nome_do_elemento, :id_usuario, 2)'
@@ -135,7 +155,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (string) ($_POST['action
                         'nome_do_elemento' => $tagNome,
                         'id_usuario' => $userId,
                     ]);
-                    $elementosRelacionados[] = (int) $connection->lastInsertId();
+                    $novoElementoId = (int) $connection->lastInsertId();
+                    $elementosRelacionados[$novoElementoId] = $tagMain;
                     continue;
                 }
 
@@ -146,23 +167,24 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (string) ($_POST['action
                     $validarElementoStatement->execute(['id' => $tagId]);
                     $elementoExistenteId = (int) ($validarElementoStatement->fetchColumn() ?: 0);
                     if ($elementoExistenteId > 0) {
-                        $elementosRelacionados[] = $elementoExistenteId;
+                        $mainAtual = $elementosRelacionados[$elementoExistenteId] ?? 2;
+                        $elementosRelacionados[$elementoExistenteId] = min($mainAtual, $tagMain);
                     }
                 }
             }
 
-            $elementosRelacionados = array_values(array_unique($elementosRelacionados));
             if ($elementosRelacionados !== []) {
                 $insertRelacionamento = $connection->prepare(
-                    'INSERT INTO elementos_informacoes (id_elemento, id_informacao, id_usuario)
-                     VALUES (:id_elemento, :id_informacao, :id_usuario)'
+                    'INSERT INTO elementos_informacoes (id_elemento, id_informacao, id_usuario, main)
+                     VALUES (:id_elemento, :id_informacao, :id_usuario, :main)'
                 );
 
-                foreach ($elementosRelacionados as $idElementoTag) {
+                foreach ($elementosRelacionados as $idElementoTag => $mainTag) {
                     $insertRelacionamento->execute([
                         'id_elemento' => $idElementoTag,
                         'id_informacao' => $informacaoId,
                         'id_usuario' => $userId,
+                        'main' => $mainTag,
                     ]);
                 }
             }

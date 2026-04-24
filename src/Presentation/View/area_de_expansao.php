@@ -137,8 +137,10 @@ declare(strict_types=1);
     const selectedTagsContainer = document.getElementById('selected-tags');
     const tagsPayloadInput = document.getElementById('tags-payload');
 
+    const MAIN_TAG_NAME = 'main';
     const selectedTags = [
-        { id: idElementoAtual, nome: <?= json_encode((string) $elementoAtual['nome_do_elemento'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, novo: false }
+        { id: idElementoAtual, nome: <?= json_encode((string) $elementoAtual['nome_do_elemento'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>, novo: false },
+        { id: 0, nome: MAIN_TAG_NAME, novo: true }
     ];
     let suggestionTimeout = null;
 
@@ -156,7 +158,17 @@ declare(strict_types=1);
         tagsPayloadInput.value = JSON.stringify(selectedTags);
     };
 
+    const isMainTag = (tagName) => tagName.trim().toLowerCase() === MAIN_TAG_NAME;
+
+    const ensureMainTagSelected = () => {
+        const hasMainTag = selectedTags.some((tag) => isMainTag(tag.nome || ''));
+        if (!hasMainTag) {
+            selectedTags.push({ id: 0, nome: MAIN_TAG_NAME, novo: true });
+        }
+    };
+
     const renderSelectedTags = () => {
+        ensureMainTagSelected();
         selectedTagsContainer.innerHTML = '';
 
         if (selectedTags.length === 0) {
@@ -168,9 +180,15 @@ declare(strict_types=1);
         selectedTags.forEach((tag, index) => {
             const item = document.createElement('button');
             item.type = 'button';
-            item.className = 'inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200';
+            const tagIsMain = isMainTag(tag.nome || '');
+            item.className = tagIsMain
+                ? 'inline-flex items-center gap-2 rounded-full border border-[orangered]/60 bg-[orangered]/20 px-3 py-1 text-xs text-[orangered]'
+                : 'inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200';
             item.innerHTML = `<span>${tag.nome}</span><span class="text-slate-300">✕</span>`;
             item.addEventListener('click', () => {
+                if (tagIsMain) {
+                    return;
+                }
                 selectedTags.splice(index, 1);
                 renderSelectedTags();
             });
