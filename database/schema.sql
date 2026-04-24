@@ -7,7 +7,14 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE elementos (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    nome_do_elemento VARCHAR(255) NOT NULL
+    nome_do_elemento VARCHAR(255) NOT NULL,
+    id_usuario INT UNSIGNED,
+
+    CONSTRAINT fk_elemento_usuario
+        FOREIGN KEY (id_usuario)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE informacoes (
@@ -16,7 +23,15 @@ CREATE TABLE informacoes (
     texto_engb TEXT,
     audio_ptbr TEXT,
     audio_engb TEXT,
-    nivel INT
+    nivel INT,
+    pessoal INT,
+    id_usuario INT UNSIGNED,
+
+    CONSTRAINT fk_info_usuario
+        FOREIGN KEY (id_usuario)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
 CREATE TABLE combinacoes (
@@ -24,6 +39,8 @@ CREATE TABLE combinacoes (
     id_info_um INT UNSIGNED,
     id_info_dois INT UNSIGNED,
     id_info_tres INT UNSIGNED,
+    id_usuario INT UNSIGNED,
+    revisoes INT,
 
     CONSTRAINT fk_info_um
         FOREIGN KEY (id_info_um)
@@ -41,6 +58,12 @@ CREATE TABLE combinacoes (
         FOREIGN KEY (id_info_tres)
         REFERENCES informacoes(id)
         ON DELETE CASCADE
+        ON UPDATE CASCADE,
+
+    CONSTRAINT fk_combinacao_usuario
+        FOREIGN KEY (id_usuario)
+        REFERENCES users(id)
+        ON DELETE CASCADE
         ON UPDATE CASCADE
 ) ENGINE=InnoDB;
 
@@ -49,7 +72,6 @@ CREATE TABLE elementos_informacoes (
     id_elemento INT UNSIGNED,
     id_informacao INT UNSIGNED,
     id_usuario INT UNSIGNED,
-    revisoes INT,
 
     CONSTRAINT fk_elemento
         FOREIGN KEY (id_elemento)
