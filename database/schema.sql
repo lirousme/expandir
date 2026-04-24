@@ -73,6 +73,7 @@ CREATE TABLE elementos_informacoes (
     id_elemento INT UNSIGNED,
     id_informacao INT UNSIGNED,
     id_usuario INT UNSIGNED,
+    main INT,
 
     CONSTRAINT fk_elemento
         FOREIGN KEY (id_elemento)
