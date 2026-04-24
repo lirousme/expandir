@@ -12,6 +12,7 @@ $basePath = $basePath === '.' ? '' : $basePath;
 
 $homeUrl = $basePath === '' ? '/' : $basePath . '/';
 $logoutUrl = $basePath . '/biblioteca.php?logout=1';
+$areaDeExpansaoBaseUrl = $basePath . '/area_de_expansao.php';
 
 if (isset($_GET['logout'])) {
     session_destroy();
