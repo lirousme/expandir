@@ -10,7 +10,8 @@
 - `src/Domain`: entidades e contratos
 - `src/Application`: casos de uso (login/cadastro)
 - `src/Infrastructure`: persistência MySQL e conexão
-- `src/Presentation`: controller HTTP
+- `src/Presentation/Controller`: controller HTTP
+- `src/Presentation/View`: views de cada página (login e biblioteca)
 - `public`: interface e endpoints
 
 ## Configuração
@@ -46,3 +47,9 @@ ALTER TABLE users MODIFY created_at DATETIME NOT NULL;
 ## Deploy em subpasta (`public_html/login`)
 - O projeto já inclui `index.php` e `auth.php` na raiz do repositório como ponte para a pasta `public`.
 - Assim, ao publicar em `public_html/login`, a URL `https://seusite.com/login/` funciona sem precisar acessar `/login/public`.
+
+
+## Fluxo de páginas
+- `index.php`: view de login/cadastro.
+- Após login/cadastro bem-sucedido, o usuário é redirecionado para `biblioteca.php`.
+- `biblioteca.php`: view protegida com cabeçalho fixo no topo e opção de logout.
