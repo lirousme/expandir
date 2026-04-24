@@ -41,6 +41,12 @@ if ($userId <= 0) {
 $createError = '';
 $createSuccess = '';
 
+if (isset($_SESSION['biblioteca_flash']) && is_array($_SESSION['biblioteca_flash'])) {
+    $createError = (string) ($_SESSION['biblioteca_flash']['error'] ?? '');
+    $createSuccess = (string) ($_SESSION['biblioteca_flash']['success'] ?? '');
+    unset($_SESSION['biblioteca_flash']);
+}
+
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $nomeDoElemento = trim((string) ($_POST['nome_do_elemento'] ?? ''));
 
@@ -84,6 +90,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
             $createError = 'Não foi possível criar o elemento agora. Tente novamente.';
         }
     }
+
+    $_SESSION['biblioteca_flash'] = [
+        'error' => $createError,
+        'success' => $createSuccess,
+    ];
+    header('Location: ' . $basePath . '/biblioteca.php');
+    exit;
 }
 
 $bibliotecaStatement = $connection->prepare(

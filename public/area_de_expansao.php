@@ -81,6 +81,12 @@ if (!is_array($elementoAtual)) {
 $createError = '';
 $createSuccess = '';
 
+if (isset($_SESSION['area_de_expansao_flash']) && is_array($_SESSION['area_de_expansao_flash'])) {
+    $createError = (string) ($_SESSION['area_de_expansao_flash']['error'] ?? '');
+    $createSuccess = (string) ($_SESSION['area_de_expansao_flash']['success'] ?? '');
+    unset($_SESSION['area_de_expansao_flash']);
+}
+
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (string) ($_POST['action'] ?? '') === 'criar_informacao') {
     $textoInformacao = trim((string) ($_POST['texto_ptbr'] ?? ''));
     $nivel = (int) ($_POST['nivel'] ?? 0);
@@ -200,6 +206,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (string) ($_POST['action
             $createError = 'Não foi possível salvar a informação agora. Tente novamente.';
         }
     }
+
+    $_SESSION['area_de_expansao_flash'] = [
+        'error' => $createError,
+        'success' => $createSuccess,
+    ];
+    header('Location: ' . $basePath . '/area_de_expansao.php?id_elemento=' . $idElementoAtual);
+    exit;
 }
 
 require dirname(__DIR__) . '/src/Presentation/View/area_de_expansao.php';
