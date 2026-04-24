@@ -194,6 +194,92 @@ while (count($slideInformacoes) < 3) {
     ];
 }
 
+/**
+ * Persiste, sem duplicar, todas as combinações 3! das informações descobertas.
+ */
+$registrarCombinacoes = static function (PDO $connection, int $idUsuario, array $informacoes): void {
+    if (count($informacoes) !== 3) {
+        return;
+    }
+
+    $idsInformacoes = [];
+    foreach ($informacoes as $informacao) {
+        if (!is_array($informacao)) {
+            return;
+        }
+        $idInformacao = (int) ($informacao['id'] ?? 0);
+        if ($idInformacao <= 0) {
+            return;
+        }
+        $idsInformacoes[] = $idInformacao;
+    }
+
+    $gerarPermutacoes = static function (array $idsInformacoes): array {
+        $resultado = [];
+        for ($i = 0; $i < 3; $i++) {
+            for ($j = 0; $j < 3; $j++) {
+                if ($j === $i) {
+                    continue;
+                }
+                for ($k = 0; $k < 3; $k++) {
+                    if ($k === $i || $k === $j) {
+                        continue;
+                    }
+                    $resultado[] = [$idsInformacoes[$i], $idsInformacoes[$j], $idsInformacoes[$k]];
+                }
+            }
+        }
+
+        $unicas = [];
+        foreach ($resultado as $permutacao) {
+            $chave = implode('-', $permutacao);
+            $unicas[$chave] = $permutacao;
+        }
+
+        return array_values($unicas);
+    };
+
+    $permutacoes = $gerarPermutacoes($idsInformacoes);
+    if ($permutacoes === []) {
+        return;
+    }
+
+    $buscarCombinacao = $connection->prepare(
+        'SELECT id
+         FROM combinacoes
+         WHERE id_info_um = :id_info_um
+           AND id_info_dois = :id_info_dois
+           AND id_info_tres = :id_info_tres
+           AND id_usuario = :id_usuario
+         LIMIT 1'
+    );
+
+    $inserirCombinacao = $connection->prepare(
+        'INSERT INTO combinacoes (id_info_um, id_info_dois, id_info_tres, id_usuario, revisoes)
+         VALUES (:id_info_um, :id_info_dois, :id_info_tres, :id_usuario, 0)'
+    );
+
+    foreach ($permutacoes as $permutacao) {
+        [$idInfoUm, $idInfoDois, $idInfoTres] = $permutacao;
+        $params = [
+            'id_info_um' => $idInfoUm,
+            'id_info_dois' => $idInfoDois,
+            'id_info_tres' => $idInfoTres,
+            'id_usuario' => $idUsuario,
+        ];
+
+        $buscarCombinacao->execute($params);
+        $combinacaoExistente = $buscarCombinacao->fetchColumn();
+        if ($combinacaoExistente !== false) {
+            continue;
+        }
+
+        $inserirCombinacao->execute($params);
+    }
+};
+
+$registrarCombinacoes($connection, $userId, $slideInformacoes);
+
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (string) ($_POST['action'] ?? '') === 'criar_informacao') {
     $textoInformacao = trim((string) ($_POST['texto_ptbr'] ?? ''));
     $nivel = (int) ($_POST['nivel'] ?? 0);
