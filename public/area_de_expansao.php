@@ -82,6 +82,7 @@ $createError = '';
 $createSuccess = '';
 $slideInformacoes = [];
 $motivosTrilha = [];
+$combinacaoAtivaId = 0;
 
 if (isset($_SESSION['area_de_expansao_flash']) && is_array($_SESSION['area_de_expansao_flash'])) {
     $createError = (string) ($_SESSION['area_de_expansao_flash']['error'] ?? '');
@@ -313,6 +314,115 @@ $registrarCombinacoes = static function (PDO $connection, int $idUsuario, array 
 
 foreach ($trilhasCompletas as $trilha) {
     $registrarCombinacoes($connection, $userId, $trilha);
+}
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (string) ($_POST['action'] ?? '') === 'concluir_combinacao') {
+    $combinacaoId = (int) ($_POST['combinacao_id'] ?? 0);
+
+    if ($combinacaoId > 0) {
+        try {
+            $connection->beginTransaction();
+
+            $buscarCombinacaoConclusao = $connection->prepare(
+                'SELECT revisoes
+                 FROM combinacoes
+                 WHERE id = :id
+                   AND id_usuario = :id_usuario
+                 LIMIT 1
+                 FOR UPDATE'
+            );
+            $buscarCombinacaoConclusao->execute([
+                'id' => $combinacaoId,
+                'id_usuario' => $userId,
+            ]);
+            $combinacaoConclusao = $buscarCombinacaoConclusao->fetch();
+
+            if (is_array($combinacaoConclusao)) {
+                $revisoesAtualizadas = max(0, (int) ($combinacaoConclusao['revisoes'] ?? 0)) + 1;
+                $proximaRevisao = (new DateTimeImmutable('now'))->modify('+' . $revisoesAtualizadas . ' days');
+
+                $atualizarCombinacao = $connection->prepare(
+                    'UPDATE combinacoes
+                     SET revisoes = :revisoes,
+                         proxima_revisao = :proxima_revisao
+                     WHERE id = :id
+                       AND id_usuario = :id_usuario'
+                );
+                $atualizarCombinacao->execute([
+                    'revisoes' => $revisoesAtualizadas,
+                    'proxima_revisao' => $proximaRevisao->format('Y-m-d H:i:s'),
+                    'id' => $combinacaoId,
+                    'id_usuario' => $userId,
+                ]);
+            }
+
+            $connection->commit();
+        } catch (Throwable) {
+            if ($connection->inTransaction()) {
+                $connection->rollBack();
+            }
+        }
+    }
+
+    header('Location: ' . $basePath . '/area_de_expansao.php?id_elemento=' . $idElementoAtual);
+    exit;
+}
+
+$buscarCombinacaoDisponivel = $connection->prepare(
+    'SELECT c.id AS combinacao_id,
+            c.id_info_um,
+            c.id_info_dois,
+            c.id_info_tres,
+            i1.texto_ptbr AS texto_um,
+            i2.texto_ptbr AS texto_dois,
+            i3.texto_ptbr AS texto_tres
+     FROM combinacoes c
+     INNER JOIN informacoes i1 ON i1.id = c.id_info_um
+     INNER JOIN informacoes i2 ON i2.id = c.id_info_dois
+     INNER JOIN informacoes i3 ON i3.id = c.id_info_tres
+     INNER JOIN elementos_informacoes ei
+        ON ei.id_informacao = c.id_info_um
+       AND ei.id_elemento = :id_elemento
+       AND ei.id_usuario = :id_usuario
+       AND ei.main = 1
+     WHERE c.id_usuario = :id_usuario
+       AND (c.proxima_revisao IS NULL OR c.proxima_revisao <= NOW())
+     ORDER BY c.proxima_revisao IS NOT NULL ASC, c.proxima_revisao ASC, c.id ASC
+     LIMIT 1'
+);
+$buscarCombinacaoDisponivel->execute([
+    'id_elemento' => $idElementoAtual,
+    'id_usuario' => $userId,
+]);
+$combinacaoDisponivel = $buscarCombinacaoDisponivel->fetch();
+
+if (is_array($combinacaoDisponivel)) {
+    $combinacaoAtivaId = (int) ($combinacaoDisponivel['combinacao_id'] ?? 0);
+    $slideInformacoes = [
+        [
+            'id' => (int) ($combinacaoDisponivel['id_info_um'] ?? 0),
+            'texto_ptbr' => (string) ($combinacaoDisponivel['texto_um'] ?? ''),
+            'nivel' => 1,
+        ],
+        [
+            'id' => (int) ($combinacaoDisponivel['id_info_dois'] ?? 0),
+            'texto_ptbr' => (string) ($combinacaoDisponivel['texto_dois'] ?? ''),
+            'nivel' => 1,
+        ],
+        [
+            'id' => (int) ($combinacaoDisponivel['id_info_tres'] ?? 0),
+            'texto_ptbr' => (string) ($combinacaoDisponivel['texto_tres'] ?? ''),
+            'nivel' => 1,
+        ],
+    ];
+} else {
+    $slideInformacoes = [
+        [
+            'id' => 0,
+            'texto_ptbr' => 'Nenhuma combinação vencida disponível agora. Aguarde o prazo da próxima revisão para continuar.',
+            'nivel' => 1,
+        ],
+    ];
 }
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (string) ($_POST['action'] ?? '') === 'criar_informacao') {

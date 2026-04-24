@@ -8,6 +8,7 @@ declare(strict_types=1);
  * @var int $idElementoAtual
  * @var string $createError
  * @var string $createSuccess
+ * @var int $combinacaoAtivaId
  * @var array<int,array{id:int,texto_ptbr:string,nivel:int}> $slideInformacoes
  */
 ?>
@@ -67,11 +68,16 @@ declare(strict_types=1);
                 ></button>
             <?php endforeach; ?>
         </div>
-    </section>
 
-    <section class="rounded-2xl border border-white/10 bg-slate-900/60 p-6 shadow-lg">
-        <h2 class="text-xl font-semibold">Adicione uma informação</h2>
-        <p class="mt-3 text-slate-300">Use o botão <strong>+</strong> no topo para criar uma nova informação e relacionar tags/elementos.</p>
+        <?php if ($combinacaoAtivaId > 0): ?>
+            <form id="concluir-combinacao-form" method="post" class="mt-6 hidden justify-center">
+                <input type="hidden" name="action" value="concluir_combinacao" />
+                <input type="hidden" name="combinacao_id" value="<?= (int) $combinacaoAtivaId ?>" />
+                <button type="submit" class="rounded-lg border border-emerald-500/50 bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/30">
+                    Concluir
+                </button>
+            </form>
+        <?php endif; ?>
 
         <?php if ($createSuccess !== ''): ?>
             <p class="mt-4 rounded-lg border border-emerald-400/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
@@ -180,6 +186,7 @@ declare(strict_types=1);
     const slideDots = Array.from(document.querySelectorAll('.slide-dot'));
     const prevSlideButton = document.getElementById('slide-prev');
     const nextSlideButton = document.getElementById('slide-next');
+    const concluirCombinacaoForm = document.getElementById('concluir-combinacao-form');
     let currentSlideIndex = 0;
 
     const renderCurrentSlide = () => {
@@ -190,6 +197,12 @@ declare(strict_types=1);
             dot.classList.toggle('bg-emerald-300', index === currentSlideIndex);
             dot.classList.toggle('bg-white/30', index !== currentSlideIndex);
         });
+
+        if (concluirCombinacaoForm) {
+            const exibirConcluir = slides.length >= 3 && currentSlideIndex === 2;
+            concluirCombinacaoForm.classList.toggle('hidden', !exibirConcluir);
+            concluirCombinacaoForm.classList.toggle('flex', exibirConcluir);
+        }
     };
 
     const goToSlide = (index) => {
