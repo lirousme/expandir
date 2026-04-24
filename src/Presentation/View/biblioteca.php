@@ -5,6 +5,7 @@ declare(strict_types=1);
 /**
  * @var string $username
  * @var string $logoutUrl
+ * @var string $areaDeExpansaoBaseUrl
  * @var string $createError
  * @var string $createSuccess
  * @var array<int,array{id:int,nome_do_elemento:string,ordem:int}> $elementosDaBiblioteca
@@ -65,7 +66,14 @@ declare(strict_types=1);
                     <?php foreach ($elementosDaBiblioteca as $elemento): ?>
                         <tr class="bg-slate-900/30">
                             <td class="px-4 py-3 text-slate-300"><?= (int) $elemento['ordem'] ?></td>
-                            <td class="px-4 py-3"><?= htmlspecialchars((string) $elemento['nome_do_elemento'], ENT_QUOTES, 'UTF-8') ?></td>
+                            <td class="px-4 py-3">
+                                <a
+                                    href="<?= htmlspecialchars($areaDeExpansaoBaseUrl . '?id_elemento=' . (int) $elemento['id'], ENT_QUOTES, 'UTF-8') ?>"
+                                    class="text-emerald-300 hover:text-emerald-200 hover:underline"
+                                >
+                                    <?= htmlspecialchars((string) $elemento['nome_do_elemento'], ENT_QUOTES, 'UTF-8') ?>
+                                </a>
+                            </td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
