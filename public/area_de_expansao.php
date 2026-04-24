@@ -387,7 +387,9 @@ $buscarCombinacaoDisponivel = $connection->prepare(
        AND ei.main = 1
      WHERE c.id_usuario = :id_usuario
        AND (c.proxima_revisao IS NULL OR c.proxima_revisao <= NOW())
-     ORDER BY c.proxima_revisao IS NOT NULL ASC, c.proxima_revisao ASC, c.id ASC
+     ORDER BY CASE WHEN c.proxima_revisao IS NULL THEN 1 ELSE 0 END ASC,
+              c.proxima_revisao ASC,
+              c.id ASC
      LIMIT 1'
 );
 $buscarCombinacaoDisponivel->execute([
@@ -419,7 +421,7 @@ if (is_array($combinacaoDisponivel)) {
     $slideInformacoes = [
         [
             'id' => 0,
-            'texto_ptbr' => 'Nenhuma combinação vencida disponível agora. Aguarde o prazo da próxima revisão para continuar.',
+            'texto_ptbr' => 'Sem combinações vencidas no momento.',
             'nivel' => 1,
         ],
     ];
