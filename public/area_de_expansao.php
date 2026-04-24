@@ -114,20 +114,26 @@ $buscarPrimeiraInformacaoPorElemento = static function (PDO $connection, int $id
 };
 
 /**
- * Busca o próximo elemento de referência partindo de uma informação.
+ * Busca todos os próximos elementos de referência (main = 2) partindo de uma informação.
  */
-$buscarProximoElementoReferencia = static function (PDO $connection, int $idInformacao): int {
+$buscarProximosElementosReferencia = static function (PDO $connection, int $idInformacao): array {
     $statement = $connection->prepare(
         'SELECT id_elemento
          FROM elementos_informacoes
          WHERE id_informacao = :id_informacao
            AND main = 2
-         ORDER BY id ASC
-         LIMIT 1'
+         ORDER BY id ASC'
     );
     $statement->execute(['id_informacao' => $idInformacao]);
 
-    return (int) ($statement->fetchColumn() ?: 0);
+    $ids = [];
+    while (($idElemento = $statement->fetchColumn()) !== false) {
+        $ids[] = (int) $idElemento;
+    }
+
+    $ids = array_values(array_filter($ids, static fn (int $id): bool => $id > 0));
+
+    return array_values(array_unique($ids));
 };
 
 $primeiraInformacao = $buscarPrimeiraInformacaoPorElemento($connection, $userId, $idElementoAtual);
@@ -140,48 +146,75 @@ if ($primeiraInformacao !== null) {
     );
 }
 
+/** @var array<int,array<int,array{id:int,texto_ptbr:string,nivel:int}>> $trilhasCompletas */
+$trilhasCompletas = [];
+$segundaInformacaoFallback = null;
+$terceiraInformacaoFallback = null;
+
 if ($primeiraInformacao !== null) {
-    $segundoElementoReferencia = $buscarProximoElementoReferencia($connection, (int) $primeiraInformacao['id']);
-    if ($segundoElementoReferencia > 0) {
-        $segundaInformacao = $buscarPrimeiraInformacaoPorElemento($connection, $userId, $segundoElementoReferencia);
-        if ($segundaInformacao !== null) {
-            $slideInformacoes[] = $segundaInformacao;
-        } else {
-            $motivosTrilha[1] = sprintf(
-                'Foi encontrado o elemento de referência %d via informação %d (main = 2), mas ele não possui informação de nível 1 com vínculo main = 1 para este usuário.',
-                $segundoElementoReferencia,
-                (int) $primeiraInformacao['id']
-            );
-        }
-    } else {
+    $segundosElementosReferencia = $buscarProximosElementosReferencia($connection, (int) $primeiraInformacao['id']);
+    if ($segundosElementosReferencia === []) {
         $motivosTrilha[1] = sprintf(
             'A informação %d (etapa 1) não possui relacionamento em elementos_informacoes com main = 2; por isso não foi possível descobrir o próximo elemento de referência.',
             (int) $primeiraInformacao['id']
         );
+    } else {
+        foreach ($segundosElementosReferencia as $segundoElementoReferencia) {
+            $segundaInformacaoCandidata = $buscarPrimeiraInformacaoPorElemento($connection, $userId, $segundoElementoReferencia);
+            if ($segundaInformacaoCandidata === null) {
+                $motivosTrilha[1] = sprintf(
+                    'Foram encontrados elementos de referência via informação %d (main = 2), mas nenhum deles possui informação de nível 1 com vínculo main = 1 para este usuário.',
+                    (int) $primeiraInformacao['id']
+                );
+                continue;
+            }
+            if ($segundaInformacaoFallback === null) {
+                $segundaInformacaoFallback = $segundaInformacaoCandidata;
+            }
+
+            $terceirosElementosReferencia = $buscarProximosElementosReferencia($connection, (int) $segundaInformacaoCandidata['id']);
+            if ($terceirosElementosReferencia === []) {
+                $motivosTrilha[2] = sprintf(
+                    'A informação %d (etapa 2) não possui relacionamento em elementos_informacoes com main = 2; por isso não foi possível descobrir o próximo elemento de referência.',
+                    (int) $segundaInformacaoCandidata['id']
+                );
+                continue;
+            }
+
+            foreach ($terceirosElementosReferencia as $terceiroElementoReferencia) {
+                $terceiraInformacaoCandidata = $buscarPrimeiraInformacaoPorElemento($connection, $userId, $terceiroElementoReferencia);
+                if ($terceiraInformacaoCandidata === null) {
+                    $motivosTrilha[2] = sprintf(
+                        'Foram encontrados elementos de referência via informação %d (main = 2), mas nenhum deles possui informação de nível 1 com vínculo main = 1 para este usuário.',
+                        (int) $segundaInformacaoCandidata['id']
+                    );
+                    continue;
+                }
+                if ($terceiraInformacaoFallback === null) {
+                    $terceiraInformacaoFallback = $terceiraInformacaoCandidata;
+                }
+
+                $trilhasCompletas[] = [
+                    $primeiraInformacao,
+                    $segundaInformacaoCandidata,
+                    $terceiraInformacaoCandidata,
+                ];
+            }
+        }
     }
 }
 
-if (isset($segundaInformacao) && is_array($segundaInformacao)) {
-    $terceiroElementoReferencia = $buscarProximoElementoReferencia($connection, (int) $segundaInformacao['id']);
-    if ($terceiroElementoReferencia > 0) {
-        $terceiraInformacao = $buscarPrimeiraInformacaoPorElemento($connection, $userId, $terceiroElementoReferencia);
-        if ($terceiraInformacao !== null) {
-            $slideInformacoes[] = $terceiraInformacao;
-        } else {
-            $motivosTrilha[2] = sprintf(
-                'Foi encontrado o elemento de referência %d via informação %d (main = 2), mas ele não possui informação de nível 1 com vínculo main = 1 para este usuário.',
-                $terceiroElementoReferencia,
-                (int) $segundaInformacao['id']
-            );
-        }
-    } else {
-        $motivosTrilha[2] = sprintf(
-            'A informação %d (etapa 2) não possui relacionamento em elementos_informacoes com main = 2; por isso não foi possível descobrir o próximo elemento de referência.',
-            (int) $segundaInformacao['id']
-        );
-    }
-} elseif (!array_key_exists(1, $motivosTrilha)) {
+if ($trilhasCompletas !== []) {
+    $slideInformacoes = $trilhasCompletas[0];
+} elseif (!array_key_exists(2, $motivosTrilha) && !array_key_exists(1, $motivosTrilha)) {
     $motivosTrilha[2] = 'A etapa 3 não pôde ser avaliada porque a etapa 2 não retornou uma informação válida.';
+}
+
+if ($trilhasCompletas === [] && $segundaInformacaoFallback !== null) {
+    $slideInformacoes[] = $segundaInformacaoFallback;
+}
+if ($trilhasCompletas === [] && $terceiraInformacaoFallback !== null) {
+    $slideInformacoes[] = $terceiraInformacaoFallback;
 }
 
 while (count($slideInformacoes) < 3) {
@@ -278,7 +311,9 @@ $registrarCombinacoes = static function (PDO $connection, int $idUsuario, array 
     }
 };
 
-$registrarCombinacoes($connection, $userId, $slideInformacoes);
+foreach ($trilhasCompletas as $trilha) {
+    $registrarCombinacoes($connection, $userId, $trilha);
+}
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && (string) ($_POST['action'] ?? '') === 'criar_informacao') {
     $textoInformacao = trim((string) ($_POST['texto_ptbr'] ?? ''));
